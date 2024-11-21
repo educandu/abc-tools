@@ -556,6 +556,11 @@
   resolved "https://registry.yarnpkg.com/@zxing/text-encoding/-/text-encoding-0.9.0.tgz#fb50ffabc6c7c66a0c96b4c03e3d9be74864b70b"
   integrity sha512-U/4aVJ2mxI0aDNI8Uq0wEhMgY+u4CNtEb0om3+y3+niDAsoTCOB33UF0sxpzqzdqXLqmvc+vZyAt4O8pPdfkwA==
 
+abc-notation-transposition@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/abc-notation-transposition/-/abc-notation-transposition-1.0.5.tgz#f2fd812b3fe8be40f5f32f99d9e20a3e1ed631a2"
+  integrity sha512-Y9xKBjiGApa48YHLNQ3+5a/z1yXG2ruWcGwB7FcSAjMUWnLeUvbucVngDgYc7WYPDHBRGuzddQ4bRnsjl4oDlA==
+
 acorn-jsx@^5.3.2:
   version "5.3.2"
   resolved "https://registry.yarnpkg.com/acorn-jsx/-/acorn-jsx-5.3.2.tgz#7ed5bb55908b3b2f1bc55c6af1653bada7f07937"
@@ -1160,6 +1165,11 @@ caniuse-lite@^1.0.30000844, caniuse-lite@^1.0.30000864:
   version "1.0.30001566"
   resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001566.tgz#61a8e17caf3752e3e426d4239c549ebbb37fef0d"
   integrity sha512-ggIhCsTxmITBAMmK8yZjEhCO5/47jKXPu6Dha/wuCS4JePVL+3uiDEBuhu2aIoT+bqTOR8L76Ip1ARL9xYsEJA==
+
+cash-dom@^8.1.5:
+  version "8.1.5"
+  resolved "https://registry.yarnpkg.com/cash-dom/-/cash-dom-8.1.5.tgz#7b2668ddbcce1c7893915d56fddb0abcda2e32c5"
+  integrity sha512-/BS05CfzyHR5xT2ksKj1sDLPaOv5rSmIwoGxNgdKwUtnIuiJ5neMxVEmZxvfyJiSjGbOMD0Lwe+9v+fszDqHew==
 
 chai@^4.3.10:
   version "4.3.10"
