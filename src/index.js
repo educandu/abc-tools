@@ -10,11 +10,11 @@ export function convertMusicXmlToAbc(xmlString, options) {
   }
 
   const [result, errorMessage] = vertaal(xmlDocument, { p: '', ...options });
-  if (errorMessage) {
-    throw new Error(errorMessage);
+  if (!result) {
+    throw new Error(errorMessage || 'Unknown error converting to ABC');
   }
 
-  return result;
+  return { result, warningMessage: errorMessage || '' };
 }
 
 export function transposeAbc(abcCode, halfSteps, options) {
