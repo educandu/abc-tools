@@ -1,5 +1,17 @@
 import { vertaal } from './xml2abc.cjs';
 import { transposeABC } from 'abc-notation-transposition';
 
-export const xml2abc = vertaal;
-export const transposeAbc = transposeABC;
+export function convertMusicXmlToAbc(xmlString, options) {
+  const xmlDocument = new window.DOMParser().parseFromString(xmlString, 'text/xml');
+  const parserErrorElement = xmlDocument?.getElementsByTagName('parsererror')[0];
+  if (parserErrorElement ) {
+    const errors = [...parserErrorElement.childNodes].map(el => el.textContent);
+    throw new Error(`Parser errors:\n${errors.join('\n')}`);
+  }
+
+  return vertaal(xmlDocument, options);
+}
+
+export function transposeAbc(abcCode, halfSteps, options) {
+  return transposeABC(abcCode, halfSteps, options);
+}

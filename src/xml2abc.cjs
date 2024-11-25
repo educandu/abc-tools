@@ -6,7 +6,7 @@
 //~ See the Lesser GNU General Public License for more details. <http://www.gnu.org/licenses/lgpl.html>.
 
 // The following line has been added by the educandu team:
-var $;
+var $ = require('cash-dom');
 
 var xml2abc_VERSION = 118;
 var vertaal;
@@ -1897,10 +1897,6 @@ Parser.prototype.parse = function (xmltree) {
 }
 
 vertaal = function (xmltree, options_parm) {   // publish in the global name space
-
-    // The following line has been added by the educandu team:
-    $ = require('cash-dom');
-
     var fnm = '', pad = '', X = 0;  // fnm, pad are not used anywhere ...
     var options = { u:0, b:0, n:0,  // unfold repeats (1), bars per line, chars per line
                     c:0, v:0, d:0,  // credit text filter level (0-6), no volta on higher voice numbers (1), denominator unit length (L:)
