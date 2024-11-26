@@ -5,9 +5,8 @@
 //~ without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 //~ See the Lesser GNU General Public License for more details. <http://www.gnu.org/licenses/lgpl.html>.
 
-// The following 2 lines have been added by the educandu team:
-var $ = require('cash-dom');
-$.fn.toArray = function toArray() { return this.get(); };
+// The following line has been added by the educandu team:
+var $ = require('./fake-jquery.cjs');
 
 var xml2abc_VERSION = 118;
 var vertaal;
