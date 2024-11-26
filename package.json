@@ -18,8 +18,7 @@
     "url": "https://github.com/educandu/abc-tools"
   },
   "dependencies": {
-    "abc-notation-transposition": "^1.0.5",
-    "cash-dom": "^8.1.5"
+    "abc-notation-transposition": "^1.0.5"
   },
   "devDependencies": {
     "@educandu/dev-tools": "^14.1.0",
