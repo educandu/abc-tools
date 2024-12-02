@@ -11,9 +11,6 @@ var $ = require('./fake-jquery.cjs');
 var xml2abc_VERSION = 118;
 var vertaal;
 
-// MAE 13 June 2024
-var gGotMicrotonalAccidental = false;
-
 (function () {  // all definitions inside an anonymous function
 'use strict'
 function repstr (n, s) { return new Array (n + 1).join (s); }   // repeat string s n times
@@ -117,7 +114,7 @@ var abcOut;
 //-------------------
 function Measure (p) {
     this.reset ();
-    this.ixp = p;       // part number  
+    this.ixp = p;       // part number
     this.ixm = 0;       // measure number
     this.mdur = 0;      // measure duration (nominal metre value in divisions)
     this.divs = 0;      // number of divisions per 1/4
@@ -190,9 +187,6 @@ function Music (options) {
     this.cpl = options.n;   // the number of chars per line when writing abc
     this.repbra = 0;        // true if volta is used somewhere
     this.nvlt = options.v;  // no volta on higher voice numbers
-
-    // MAE 16 Nov 2023 - To hide or show the stave numbers at the end of the staves
-    this.addstavenum = options.addstavenum; // Hide or show stave number comments at the end of each line
 }
 Music.prototype.initVoices = function (newPart) {
     this.vtimes = {}; this.voices = {}; this.lyrics = {};
@@ -273,7 +267,7 @@ Music.prototype.addBar = function (lbrk, m) {   // linebreak, measure data
                 var x = p.str;          // p.str is the ABC barline string
                 if (m.lline)            // append begin of repeat, m.lline == ':'
                     x = (x + m.lline).replace (/:\|:/g,'::').replace (/\|\|/g,'|');
-                if (this.nvlt == 3) {   // add volta number only to lowest voice in part 0 
+                if (this.nvlt == 3) {   // add volta number only to lowest voice in part 0
                     if (m.ixp + parseInt (v) == Math.min.apply (null, keyints (this.vnums))) x += m.lnum;
                 } else if (this.nvlt == 4) {    // add volta to lowest voice in each part
                     if (parseInt (v) == Math.min.apply (null, keyints (this.vnums))) x += m.lnum;
@@ -362,15 +356,7 @@ Music.prototype.outVoices = function (divs, ip) {   // output all voices of part
                 ib += 1;
             }
             bn += ib;
-
-            // MAE 16 Nov 2023
-            if (this.addstavenum){
-                abcOut.add (chunk + ' %' + bn);  
-            }
-            else{
-                abcOut.add (chunk); 
-            }
-
+            abcOut.add (chunk + ' %' + bn);   // line with barnumer
             vn.splice (0, ib);      // chop ib bars
             lyrlines = sortitems (vl, 1);   // order the numbered lyric lines for output (alphabitical on key)
             for (i = 0; i < lyrlines.length; ++ i) {
@@ -403,7 +389,7 @@ function ABCoutput (fnmext, pad, X, options) {
     this.X = X + 1;             // the abc tune number
     this.denL = options.d;      // denominator of the unit length (L:) from -d option
     this.volpan = options.m;    // 0 -> no %%MIDI, 1 -> only program, 2 -> all %%MIDI
-    this.cmpL = [];             // computed optimal unit length for all voices    
+    this.cmpL = [];             // computed optimal unit length for all voices
     this.scale = '';            // float around 1.0
     this.tstep = options.t      // translate percmap to voicemap
     this.stemless = 0           // use U:s=!stemless!
@@ -411,8 +397,6 @@ function ABCoutput (fnmext, pad, X, options) {
     this.leftmargin = '';       // in cm
     this.rightmargin = '';      // in cm
     this.shiftStem = options.s; // shift note heads 3 units left
-    // MAE 14 June 2024
-    this.nolbrk = options.x; // generate no linebreaks ($)
     this.mnum = options.mnum;   // measure numbers
     if (options.p.length == 4) {
         this.scale = options.p [0] != '' ? parseFloat (options.p [0]) : '';
@@ -462,20 +446,8 @@ ABCoutput.prototype.mkHeader = function (stfmap, partlist, midimap, vmpdct, kopp
     d = sortitems (d);  // -> [[unitLength, numberOfTimes]], sorted on numberOfTimes (when tie select smallest unitL)
     defL = d [d.length-1][0];
     defL = this.denL ? this.denL : defL;    // override default unit length with -d option
-
     hd.push (format ('L:1/%d\n%sM:%s\n', [defL, tempo, this.mtr]));
-
-    // MAE 13 June 2024 - Only inject the linebreak annotation if actually being used
-    if (this.nolbrk){
-        hd.push (format ('K:%s\n', [this.key])); 
-    }
-    else{
-        hd.push (format ('I:linebreak $\nK:%s\n', [this.key]));
-    }
-
-    // MAE 15 June 2025 - Add stretchlast
-    hd.push("%%stretchlast true\n");
-
+    hd.push (format ('I:linebreak $\nK:%s\n', [this.key]));
     if (this.stemless) hd.push ('U:s=!stemless!\n');
     var vxs = Object.keys (vmpdct).sort ();
     for (i = 0; i < vxs.length; ++i) hd = hd.concat (vmpdct [vxs [i]]);
@@ -526,41 +498,7 @@ ABCoutput.prototype.mkHeader = function (stfmap, partlist, midimap, vmpdct, kopp
 ABCoutput.prototype.writeall = function () {
     var str = abcOut.outlist.join ('');
     if (this.dojef) str = perc2map (str);
-
-    // If there were microtonal accents injected, set the annotation font size
-    if (gGotMicrotonalAccidental){
-
-        str = replaceXWithText(str,"% Injected for microtonal accidental annotations\n%%annotationfont Palatino 9");
-    }
-
     return [str, this.infolist.join ('\n')];
-}
-
-function replaceXWithText(inputText, additionalText) {
-
-    // Split the input text into lines
-    let lines = inputText.split('\n');
-    
-    // Create a new array to hold the modified lines
-    let modifiedLines = [];
-    
-    // Regular expression to match lines starting with "X:" followed by an integer
-    let regex = /^X:\d+/;
-    
-    for (let i = 0; i < lines.length; i++) {
-        if (regex.test(lines[i])) {
-            // If the line matches the pattern, add it to the modified lines
-            modifiedLines.push(lines[i]);
-            // Add the additional text on the next line
-            modifiedLines.push(additionalText);
-        } else {
-            // If the line does not match the pattern, just add it to the modified lines
-            modifiedLines.push(lines[i]);
-        }
-    }
-    
-    // Join the modified lines back into a single string
-    return modifiedLines.join('\n');
 }
 
 //----------------
@@ -847,7 +785,7 @@ function getPartlist ($ps) {    // correct part-list (from buggy xml-software)
             inum = e.indexOf (num);
             if (type == 'start') {
                 if (inum > -1) {    // missing stop: insert one
-                    xs.push (mkstop (num));                    
+                    xs.push (mkstop (num));
                     xs.push ($x);
                 } else {            // normal start
                     xs.push ($x)
@@ -930,7 +868,7 @@ function prgroupelem (x, gnm, bar, pmap, accVce, accStf) {  // collect partnames
         y = pmap.shift ();
         if (gnm[0]) {           // put group-name before part-name
             x[1] = gnm[0] + ':' + x[1];   // gnm == [group-name, group-abbrev]
-            x[2] = gnm[1] + ':' + x[2];            
+            x[2] = gnm[1] + ':' + x[2];
         }
         accVce.push (x);
         accStf.push.apply (accStf, bracePart (y));
@@ -1228,159 +1166,9 @@ Parser.prototype.tabnote = function (alt, ptc, oct, v, ntrec) {
     return nt;                          // ABC code always in key C (with midi pitch alterations)
 }
 Parser.prototype.ntAbc = function (ptc, oct, $note, v, ntrec, isTab) {  // pitch, octave -> abc notation
-    var acc2alt = {'quarter-flat':-3,'double-flat':-2,'flat-flat':-2,'flat':-1,'natural':0,'sharp':1,'sharp-sharp':2,'double-sharp':2,'quarter-sharp':3};
+    var acc2alt = {'double-flat':-2,'flat-flat':-2,'flat':-1,'natural':0,'sharp':1,'sharp-sharp':2,'double-sharp':2};
     oct += this.clefOct [this.curStf [v]] || 0;     // current clef-octave-change value
     var acc = $note.find ('accidental').text ();    // should be the notated accidental
-    // MAE 12 Jun 2024 - for MuseScore half sharps and flats
-    // If accidental is other, must look in the smufl attribute
-    var gotBadOther = false;
-    var theSMUFL;
-    if (acc == 'other'){
-        var theAccidental = $note.find('accidental');
-        theSMUFL = theAccidental.attr('smufl');
-        if (theSMUFL == "accidentalLowerOneUndecimalQuartertone"){
-            acc = 'quarter-flat';
-        }
-        else
-        if (theSMUFL == "accidentalRaiseOneUndecimalQuartertone"){
-            acc = 'quarter-sharp';
-        }
-        else
-        if (theSMUFL == "accidentalDoubleFlatOneArrowDown"){
-            acc = 'flat-flat-down';
-        }
-        else
-        if (theSMUFL == "accidentalFlatOneArrowDown"){
-            acc = 'flat-down';
-        }
-        else
-        if (theSMUFL == "accidentalNaturalOneArrowDown"){
-            acc = 'natural-down';
-        }
-        else
-        if (theSMUFL == "accidentalSharpOneArrowDown"){
-            acc = 'sharp-down';
-        }
-        else
-        if (theSMUFL == "accidentalDoubleSharpOneArrowDown"){
-            acc = 'double-sharp-down';
-        }
-        else
-        if (theSMUFL == "accidentalDoubleFlatOneArrowUp"){
-            acc = 'flat-flat-up';
-        }
-        else
-        if (theSMUFL == "accidentalFlatOneArrowUp"){
-            acc = 'flat-up';
-        }
-        else
-        if (theSMUFL == "accidentalNaturalOneArrowUp"){
-            acc = 'natural-up';
-        }
-        else
-        if (theSMUFL == "accidentalSharpOneArrowUp"){
-            acc = 'sharp-up';
-        }
-        else
-        if (theSMUFL == "accidentalDoubleSharpOneArrowUp"){
-            acc = 'double-sharp-up';
-        }
-        else{
-
-            gotBadOther = true;
-            
-            // Force annotation font injection
-            gGotMicrotonalAccidental = true;
-
-            var gotSMUFL = true;
-
-            // Map additional SMUFL values to strings
-            switch (theSMUFL){
-                case "accidentalDoubleFlatTwoArrowsDown":
-                    theSMUFL = "♭♭↓↓";
-                    break;
-                case "accidentalFlatTwoArrowsDown":
-                    theSMUFL = "♭↓↓";
-                    break;
-                case "accidentalNaturalTwoArrowsDown":
-                    theSMUFL = "♮↓↓";
-                    break;
-                case "accidentalSharpTwoArrowsDown":
-                    theSMUFL = "♯↓↓";
-                    break;
-                case "accidentalDoubleSharpTwoArrowsDown":
-                    theSMUFL = "♯♯↓↓";
-                    break;
-                case "accidentalDoubleFlatTwoArrowsUp":
-                    theSMUFL = "♭♭↑↑";
-                    break;
-                case "accidentalFlatTwoArrowsUp":
-                    theSMUFL = "♭↑↑";
-                    break;
-                case "accidentalNaturalTwoArrowsUp":
-                    theSMUFL = "♮↑↑";
-                    break;
-                case "accidentalSharpTwoArrowsUp":
-                    theSMUFL = "♯↑↑";
-                    break;
-                case "accidentalDoubleSharpTwoArrowsUp":
-                    theSMUFL = "♯♯↑↑";
-                    break;
-                case "accidentalDoubleFlatThreeArrowsDown":
-                    theSMUFL = "♭♭↓↓↓";
-                    break;
-                case "accidentalFlatThreeArrowsDown":
-                    theSMUFL = "♭↓↓↓";
-                    break;
-                case "accidentalNaturalThreeArrowsDown":
-                    theSMUFL = "♮↓↓↓";
-                    break;
-                case "accidentalSharpThreeArrowsDown":
-                    theSMUFL = "♯↓↓↓";
-                    break;
-                case "accidentalDoubleSharpThreeArrowsDown":
-                    theSMUFL = "♯♯↓↓↓";
-                    break;
-                case "accidentalDoubleFlatThreeArrowsUp":
-                    theSMUFL = "♭♭↑↑↑";
-                    break;
-                case "accidentalFlatThreeArrowsUp":
-                    theSMUFL = "♭↑↑↑";
-                    break;
-                case "accidentalNaturalThreeArrowsUp":
-                    theSMUFL = "♮↑↑↑";
-                    break;
-                case "accidentalSharpThreeArrowsUp":
-                    theSMUFL = "♯↑↑↑";
-                    break;
-                case "accidentalDoubleSharpThreeArrowsUp":
-                    theSMUFL = "♯♯↑↑↑";
-                    break;  
-                default:
-                    gotSMUFL=false;
-                    break;
-            }        
-
-            if (!gotSMUFL){
-
-                if ((theSMUFL.toLowerCase().indexOf("raise") != -1) || (theSMUFL.toLowerCase().indexOf("sharp") != -1)){
-                    theSMUFL = "♯?";
-                }
-                else
-                if ((theSMUFL.toLowerCase().indexOf("lower") != -1) || (theSMUFL.toLowerCase().indexOf("flat") != -1)){
-                    theSMUFL = "♭?";
-                }
-                else
-                if (theSMUFL.toLowerCase().indexOf("natural") != -1){
-                    theSMUFL = "♮?";
-                }
-                else{
-                    theSMUFL = "?";
-                }
-            }
-        }
-    }
-
     var alt = $note.find ('pitch>alter').text ();   // pitch alteration (midi)
     if (ntrec.tab) return this.tabnote (alt, ptc, oct, v, ntrec);   // implies s.tstep is true (options.t was given)
     else if (isTab && this.tstep) {
@@ -1394,13 +1182,7 @@ Parser.prototype.ntAbc = function (ptc, oct, $note, v, ntrec, isTab) {  // pitch
     if (acc === '' && alt === '') {
         return p;                   // no acc, no alt
     } else if (acc != '') {
-        if (gotBadOther){
-            alt = theSMUFL;
-        }
-        else{
-            // If not found in this lookup, alt will be undefined
-            alt = acc2alt[acc];
-        }
+        alt = acc2alt [acc];
     } else {                        // now see if we really must add an accidental
         alt = parseFloat (alt);     // some xml files do have floats in <alter>
         if (p_v in this.curalts) {  // the note in this voice has been altered before
@@ -1410,167 +1192,8 @@ Parser.prototype.ntAbc = function (ptc, oct, $note, v, ntrec, isTab) {  // pitch
         if (xs.some (function (x) { return $(x).attr ('type') == 'stop'; })) return p; // don't alter tied notes
         infof ('accidental %d added in part %d, measure %d, voice %d note %s', [alt, this.msr.ixp+1, this.msr.ixm+1, v+1, p] );
     }
-
     this.curalts [p_v] = alt;
-
-    // Prepend the accidental
-    if (gotBadOther){
-        p = '"_'+theSMUFL+'"' + p;
-    }
-    else{
-
-        if (alt == undefined){
-
-            //console.log("acc before: "+acc);
-
-            var gotMatch = true;
-
-            // Force annotation font injection
-            gGotMicrotonalAccidental = true;
-
-            switch (acc){
-                case "natural-sharp":
-                    acc = "♮♯";  
-                    break;
-                case "natural-flat":    
-                    acc = "♮♭";  
-                    break;
-                case "three-quarters-flat":     
-                    acc = "♭;3/4";  
-                    break;
-                case "three-quarters-sharp":    
-                    acc = "♯;3/4";  
-                    break;
-                case "sharp-down":  
-                    acc = "↓♯";  
-                    break;
-                case "sharp-up":    
-                    acc = "♯↑";  
-                    break;
-                case "natural-down":    
-                    acc = "♮↓";  
-                    break;
-                case "natural-up":  
-                    acc = "↑♮";  
-                    break;
-                case "flat-down":   
-                    acc = "↓♭";  
-                    break;
-                case "flat-up":     
-                    acc = "↑♭";  
-                    break;
-                case "double-sharp-down":  
-                    acc = "↓♯♯";  
-                    break;
-                case "double-sharp-up":     
-                    acc = "♯♯↑";  
-                    break;
-                case "flat-flat-down":  
-                    acc = "↓♭♭";  
-                    break;
-                case "flat-flat-up":   
-                    acc = "♭♭↑";  
-                    break;
-                case "arrow-down":  
-                    acc = "↓";  
-                    break;
-                case "arrow-up":    
-                    acc = "↑";  
-                    break;
-                case "triple-sharp":    
-                    acc = "♯♯♯";  
-                    break;
-                case "triple-flat":     
-                    acc = "♭♭♭";  
-                    break;
-                case "slash-quarter-sharp":     
-                    acc = "♯/4";  
-                    break;
-                case "slash-quarter-flat":     
-                    acc = "♭/4";  
-                    break;
-                case "slash-sharp":     
-                    acc = "/♯";  
-                    break;
-                case "slash-flat":
-                    acc = "/♭";  
-                    break;
-                case "double-slash-flat":   
-                    acc = "//♭";
-                    break;
-                case "double-slash-sharp":   
-                    acc = "//♯";
-                    break;
-                case "sharp-1":     
-                    acc = "♯1";  
-                    break;
-                case "sharp-2":     
-                    acc = "♯2";  
-                    break;
-                case "sharp-3":     
-                    acc = "♯3";  
-                    break;
-                case "sharp-4":     
-                    acc = "♯4";  
-                    break;
-                case "sharp-5":     
-                    acc = "♯5";  
-                    break;
-                case "flat-1":  
-                    acc = "♭1";  
-                    break;
-                case "flat-2":  
-                    acc = "♭2";  
-                    break;
-                case "flat-3":  
-                    acc = "♭3";  
-                    break;
-                case "flat-4":  
-                    acc = "♭4";  
-                    break;
-                case "flat-5":  
-                    acc = "♭5";  
-                    break;
-                case "sori":
-                    acc = "sori"; 
-                    break;
-                case "koron":
-                    acc = "koron"; 
-                    break;    
-                default:
-                    gotMatch = false;
-                    break;
-            }
-
-            // Some other accidental, try to match it with something reasonable
-            if (!gotMatch){
-
-                if ((acc.toLowerCase().indexOf("raise") != -1) || (acc.toLowerCase().indexOf("sharp") != -1)){
-                    acc = "♯?";
-                }
-                else
-                if ((acc.toLowerCase().indexOf("lower") != -1) || (acc.toLowerCase().indexOf("flat") != -1)){
-                    acc = "♭?";
-                }
-                else
-                if (acc.toLowerCase().indexOf("natural") != -1){
-                    acc = "♮?";
-                }
-                else{
-                    acc = "?";
-                }
-            }
-            
-            //console.log("acc after: "+acc)
-            p = '"_'+acc+'"' + p;
-
-        }
-        else{
-
-            p = ['_/','__','_','=','^','^^','^/'][alt+3] + p;
-        }
-    }
-
+    p = ['__','_','=','^','^^'][alt+2] + p; // and finally ... prepend the accidental
     return p;
 }
 Parser.prototype.doNote = function ($n) {
@@ -1579,7 +1202,7 @@ Parser.prototype.doNote = function ($n) {
     if (this.isSib) v += 100 * ($n.find ('staff').text () || '1')   // repair bug in Sibelius
     var chord = $n.find ('chord').length > 0;
     var p = $n.find ('pitch>step').text () || $n.find ('unpitched>display-step').text ();
-    var o = $n.find ('pitch>octave').text () || $n.find ('unpitched>display-octave').text ();    
+    var o = $n.find ('pitch>octave').text () || $n.find ('unpitched>display-octave').text ();
     var r = $n.find ('rest').length > 0;
     var numer = $n.find ('time-modification>actual-notes').text();
     if (numer) {
@@ -1681,7 +1304,7 @@ Parser.prototype.doAttr = function ($e) {
     dvstxt = $e.find ('divisions').text ();
     if (dvstxt) this.msr.divs = parseInt (dvstxt);
     steps = parseInt ($e.find ('transpose>chromatic').text () || '0');  // for transposing instrument
-    fifths = $e.find ('key>fifths').first().text ();    
+    fifths = $e.find ('key>fifths').first().text ();
     first = this.msc.tijd == 0 && this.msr.ixm == 0;    // first attributes in first measure
     if (fifths) {
         t = setKey (parseInt (fifths), $e.find ('key>mode').first().text () || 'major');
@@ -1946,9 +1569,7 @@ Parser.prototype.doHarmony = function ($e, i, $es) {    // parse a musicXMl harm
     }
     kind = kind.replace ('79','9').replace ('713','13').replace ('maj6','6');
     bass = $e.find ('bass>bass-step').text () + (altmap [$e.find ('bass>bass-alter').text ()] || '');
-    
-    // MAE 30 Jun 2024, inserted space before chord to avoid beaming issues
-    this.msc.appendElem (vt, ' "' + root + alt + kind + sus + (bass && '/' + bass) + '"', 1); 
+    this.msc.appendElem (vt, '"' + root + alt + kind + sus + (bass && '/' + bass) + '"', 1);
 }
 Parser.prototype.doBarline = function ($e) {
     var $rep = $e.find ('repeat');
@@ -2068,12 +1689,7 @@ Parser.prototype.mkTitle = function ($e) {
     if (credits.length) title += credits.map (function (c) { return 'T:' + c; }).join ('\n') + '\n';
     if (composer.length) title += composer.map (function (c) { return 'C:' + c; }).join ('\n') + '\n';
     if (lyricist.length) title += lyricist.map (function (c) { return 'Z:' + c; }).join ('\n') + '\n';
-
-    // MAE 17 Aug 2024 - Clean double spaces from the title
-    if (title) title = title.replaceAll("  "," ");
-
     if (title) abcOut.title = title.substr (0, title.length - 1);
-
     this.isSib = $e.find ('identification>encoding>software').text ().indexOf ('Sibelius') >= 0;
     if (this.isSib) infof ('Sibelius MusicXMl is unreliable', []);
 
@@ -2281,18 +1897,13 @@ Parser.prototype.parse = function (xmltree) {
 }
 
 vertaal = function (xmltree, options_parm) {   // publish in the global name space
-
-    // MAE 13 June 2024 - Initially, no microtonal accidentals
-    gGotMicrotonalAccidental = false;
-
     var fnm = '', pad = '', X = 0;  // fnm, pad are not used anywhere ...
     var options = { u:0, b:0, n:0,  // unfold repeats (1), bars per line, chars per line
                     c:0, v:0, d:0,  // credit text filter level (0-6), no volta on higher voice numbers (1), denominator unit length (L:)
                     m:0, x:0, t:0,  // no midi, minimal midi, all midi output (0,1,2), no line breaks (1), perc, tab staff -> voicemap (1)
                     v1:0, noped:0,  // all directions to first voice of staff (1), no pedal directions (1)
                     stm:0, mnum:-1, // translate stem elements (stem direction), number every mnum measures
-                    p:'f', s:0, // page format: scale (1.0), width, left- and right margin in cm, shift note heads in tablature (1)
-                    addstavenum:1 };  // Add measure numbers at the end of the staves
+                    p:'f', s:0 };   // page format: scale (1.0), width, left- and right margin in cm, shift note heads in tablature (1)
     for (var opt in options_parm) options [opt] = options_parm [opt];
     options.p = options.p ? options.p.split (',') : []          // [] | [string]
     abcOut = new ABCoutput (fnm + '.abc', pad, X, options); // create global ABC output object
