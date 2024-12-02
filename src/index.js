@@ -9,7 +9,7 @@ export function convertMusicXmlToAbc(xmlString, options) {
     throw new Error(`Parser errors:\n${errors.join('\n')}`);
   }
 
-  const [result, errorMessage] = vertaal(xmlDocument, { p: '', ...options });
+  const [result, errorMessage] = vertaal(xmlDocument, { p: '', b: 4, d: 4, ...options });
   if (!result) {
     throw new Error(errorMessage || 'Unknown error converting to ABC');
   }
