@@ -20,10 +20,10 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@educandu/dev-tools@^14.1.0":
-  version "14.1.0"
-  resolved "https://registry.yarnpkg.com/@educandu/dev-tools/-/dev-tools-14.1.0.tgz#aac6e244ab31e6507b9ff18f7f8a302e0b5c03bd"
-  integrity sha512-644Q7Qj9XtXmF/BXsR1lIMLIjCQCbiKzaRmc14mCGql3YgXxxJUzA1RsKhY0HQgH5HCgHyQwONSD5PbRwq9AkA==
+"@educandu/dev-tools@^14.3.0":
+  version "14.3.0"
+  resolved "https://registry.yarnpkg.com/@educandu/dev-tools/-/dev-tools-14.3.0.tgz#914dbd5494ac5141584f5b1a1f29f9e40a854fdd"
+  integrity sha512-GLvY0i7MgJYiRAikGpUQMeqNApEp7YjX7Rb0Vg4WstELhwLG/G0kU9+RKo1kfxwOOxBpU9j3uoEtM2qS4UhrGA==
   dependencies:
     "@rauschma/stringio" "^1.4.0"
     axios "^1.6.2"
